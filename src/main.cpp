@@ -67,6 +67,22 @@ public:
 				m_canvas[ssx][ssy] = ' ';
 	}
 
+	char rawin()
+	{
+        	system("stty raw");
+        	char c = getchar(); 
+        	// terminate when "." is pressed
+        	system("stty cooked");
+        	system("clear");
+        	//std::cout << c << " was pressed."<< std::endl;
+        	if(c == 'q')
+		{
+        	    system("stty cooked");
+        	    exit(0);
+        	}  
+		return c;
+	}
+
 	void render()
 	{
 		printf("rendering canvas ...\n");
@@ -87,23 +103,30 @@ private:
 	double m_scale;
 	double m_stretch;
 	double m_epsilon;
-public:
+	double m_delta;
+	double m_kappa;
 	
-	explicit Graph( int width, int height) : TermWindow(width, height)
+	void initValues()
 	{
-		printf("plm2");
-		m_offset.x = (double)m_width/2;
-		m_offset.y = (double)m_height/2;
-		m_stretch = 2.0;
-	}
-	explicit Graph()
-	{
-		TermWindow();
 		m_offset.x = (double)m_width/2;
 		m_offset.y = (double)m_height/2;
 		m_stretch = 2.0;
 		m_epsilon = 0.5;
+		m_delta = 1.0;
+		m_kappa = 1.1;
 	}
+public:
+	
+	explicit Graph( int width, int height) : TermWindow(width, height)
+	{
+		initValues();
+		printf("Press any key to start, press 'q' to quit ... ");
+	}
+	explicit Graph()
+	{
+		TermWindow();
+	}
+
 	void setScale(double scale)
 	{
 		m_scale = scale;
@@ -112,6 +135,20 @@ public:
 	{
 		m_offset.x = offset_x;
 		m_offset.y = offset_y;
+	}
+	void translate(double delta_x, double delta_y)
+	{
+		m_offset.x += delta_x;
+		m_offset.y += delta_y;
+	}
+	void scale(double kappa)
+	{
+		m_scale *= kappa;
+	}
+
+	void drawGrid()
+	{
+
 	}
 		
 /// THIS IS SUM BULLSHIT (because I'm too lazy to write an expression parser) /// 
@@ -151,6 +188,51 @@ public:
 		for( int ssy=0; ssy < m_height; ++ssy)
 			m_canvas[(int)m_offset.x][ssy] = '|';
 	}
+
+	void ctrl()
+	{
+		char c = rawin();
+
+		switch(c)
+		{
+			case 'h':
+			{
+				translate(2*m_delta, 0);
+				break;
+			}
+			case 'j':
+			{
+				translate(0, -m_delta);
+				break;
+			}
+			case 'k':
+			{
+				translate(0, m_delta);
+				break;
+			}
+			case 'l':
+			{
+				translate(-2*m_delta, 0);
+				break;
+			}
+			case '-':
+			{
+				scale(m_kappa);
+				break;
+			}
+			case '+':
+			{
+				scale(1./m_kappa);
+				break;
+			}
+			case '=':
+			{
+				setScale(1.0);
+				break;
+			}
+		}
+		wipe();
+	}
 };
 
 int parseInt(char* s)
@@ -172,9 +254,13 @@ int main (int argc, char* argv[])
 	window->debug();
 	window->setChar( 1, 1, '=');
 	window->setScale(1.0);
-	window->drawExpr();
-	window->drawAxis();
-	window->render();
+	while(1)
+	{
+		window->ctrl();
+		window->drawExpr();
+		window->drawAxis();
+		window->render();
+	}
 //	printf("%d", window.getWidth());
 
 	return 0;
