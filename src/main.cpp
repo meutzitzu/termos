@@ -4,12 +4,25 @@
 #define DEFAULT_ROWS 40
 #define DEFAULT_COLS 80
 
+#define R   "\x1B[31m"
+#define G   "\x1B[32m"
+#define Y   "\x1B[33m"
+#define B   "\x1B[34m"
+#define M   "\x1B[35m"
+#define C   "\x1B[36m"
+#define W   "\x1B[37m"
+#define r 	"\x1B[0m"
+
+const char* g_clr[] = {r, R, W, Y, G, C, B, M};
+
 class TermWindow
 {
 protected:
 	char** m_canvas;
+	int** m_color;
 	int m_width;
 	int m_height;
+
 
 public: 
 	
@@ -24,9 +37,11 @@ public:
 		m_height = height;
 		printf("constructor called with dims %d, %d \n", width, height);
 		m_canvas = new char*[width];
+		m_color = new int*[width];
 		for(int k = 0; k < width; ++k)
 		{
 			m_canvas[k] = new char[height];
+			m_color[k] = new int[height];
 		}
 		wipe();
 	}
@@ -42,8 +57,10 @@ public:
 		for(int k = 0; k < m_width; ++k)
 		{
 			delete[] m_canvas[k];
+			delete[] m_color[k];
 		}
 		delete[] m_canvas;
+		delete[] m_color;
 	}
 
 	int getWidth()
@@ -54,17 +71,33 @@ public:
 	{
 		return m_height;
 	}
+
 	void setChar( int ssx, int ssy, char c)
 	{
-		printf("updated char\n");
 		m_canvas[ssx][ssy] = c;
+	}
+
+
+	void setCharColor( int ssx, int ssy, char chr, int clr)
+	{
+		//printf("updated char\n");
+		m_canvas[ssx][ssy] = chr;
+		m_color[ssx][ssy] = clr;
+	}
+
+	void setColor( int ssx, int ssy, int c)
+	{
+		m_color[ssx][ssy] = (0<c && c<8 ? c : 0);
 	}
 
 	void wipe()
 	{
 		for( int ssy=0; ssy < m_height; ++ssy)
 			for ( int ssx=0; ssx < m_width; ++ssx)
+			{
 				m_canvas[ssx][ssy] = ' ';
+				m_color[ssx][ssy] = 0;
+			}
 	}
 
 	char rawin()
@@ -85,12 +118,25 @@ public:
 
 	void render()
 	{
-		printf("rendering canvas ...\n");
 		for( int ssy=0; ssy < m_height; ++ssy)
 		{
-			//printf("%s", m_canvas[ssy]);
 			for ( int ssx=0; ssx < m_width; ++ssx)
 				printf("%c", m_canvas[ssx][ssy]);
+			printf("\n");
+		}
+	}
+
+	void printClr(char chr, int clr)
+	{
+		printf( "%s%c%s", g_clr[clr], chr, g_clr[0]);
+	}
+
+	void renderColor()
+	{
+		for( int ssy=0; ssy < m_height; ++ssy)
+		{
+			for ( int ssx=0; ssx < m_width; ++ssx)
+				printClr(m_canvas[ssx][ssy], m_color[ssx][ssy]);
 			printf("\n");
 		}
 	}
@@ -112,7 +158,7 @@ private:
 		m_offset.y = (double)m_height/2;
 		m_stretch = 2.0;
 		m_epsilon = 0.5;
-		m_delta = 1.0;
+		m_delta = 10.0;
 		m_kappa = 1.1;
 	}
 public:
@@ -126,7 +172,10 @@ public:
 	{
 		TermWindow();
 	}
-
+	void setEpsilon(double epsilon)
+	{
+		m_epsilon = epsilon;
+	}
 	void setScale(double scale)
 	{
 		m_scale = scale;
@@ -155,25 +204,37 @@ public:
 	double expr(double x, double y)
 	{
 		//return (abs(100*sin(x)-y)-10)*(abs(x*x + y*y -512)-16);
-		return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
+		//return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
+		return -(double)cplxiter(x,y);
 	}
 /// END OF BULLSHIT ^^^ ///
+	int calcColor(double x)
+	{
+		const int range = 8;
+		double q = 0.01;
+		return (int)(log(-x)/q)%range;
+	}
 
 	void drawExpr()
 	{
 		//printf("%f", m_offset.y);
+		double upper;
+		double lower;
 		for( int ssy=0; ssy < m_height; ++ssy)
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
-				if(expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y))<m_epsilon && expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5))<m_epsilon)
+				upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
+				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5));
+				setColor(ssx, ssy, calcColor((upper+lower)/2));	
+				if(upper < m_epsilon && lower < m_epsilon)
 				{
 					m_canvas[ssx][ssy] = ':';
 				} 
-				else if (expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y))<m_epsilon)
+				else if (upper < m_epsilon)
 				{
 					m_canvas[ssx][ssy] = '\'';
 				}
-				else if (expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5))<m_epsilon)
+				else if (lower < m_epsilon)
 				{
 					m_canvas[ssx][ssy] = '.';
 				}
@@ -215,6 +276,26 @@ public:
 				translate(-2*m_delta, 0);
 				break;
 			}
+			case 'H':
+			{
+				translate(2.0, 0);
+				break;
+			}
+			case 'J':
+			{
+				translate(0, -1.0);
+				break;
+			}
+			case 'K':
+			{
+				translate(0, 1.0);
+				break;
+			}
+			case 'L':
+			{
+				translate(-2.0, 0);
+				break;
+			}
 			case '-':
 			{
 				scale(m_kappa);
@@ -228,6 +309,26 @@ public:
 			case '=':
 			{
 				setScale(1.0);
+				break;
+			}
+			case 'a':
+			{
+				g_x -= 0.005*m_delta;
+				break;
+			}
+			case 's':
+			{
+				g_y += 0.005*m_delta;
+				break;
+			}
+			case 'd':
+			{
+				g_y -= 0.005*m_delta;
+				break;
+			}
+			case 'f':
+			{
+				g_x += 0.005*m_delta;
 				break;
 			}
 		}
@@ -253,13 +354,15 @@ int main (int argc, char* argv[])
 
 	window->debug();
 	window->setChar( 1, 1, '=');
-	window->setScale(1.0);
+	window->setScale(0.05);
+	window->setEpsilon(-50.0);
+	printf("\nCOLORTEST=%d\n",(window->calcColor(-100.0)));
 	while(1)
 	{
 		window->ctrl();
 		window->drawExpr();
-		window->drawAxis();
-		window->render();
+//		window->drawAxis();
+		window->renderColor();
 	}
 //	printf("%d", window.getWidth());
 
