@@ -128,7 +128,25 @@ public:
 
 	void printClr(char chr, int clr)
 	{
-		printf( "%s%c%s", g_clr[clr], chr, g_clr[0]);
+		switch(chr)
+		{
+			case ':':
+			{
+				printf( "%s%s%s", g_clr[clr], "\u2588", g_clr[0]);
+				break;
+			}
+			case '.':
+			{
+				printf( "%s%s%s", g_clr[clr], "\u2585", g_clr[0]);
+				break;
+			}
+			case '\'':
+			{
+				printf( "%s%s%s", g_clr[clr], "\u2580", g_clr[0]);
+				break;
+			}
+			default: {printf( "%s%c%s", g_clr[clr], chr, g_clr[0]);break;}
+		}
 	}
 
 	void renderColor()
@@ -211,8 +229,8 @@ public:
 	int calcColor(double x)
 	{
 		const int range = 8;
-		double q = 0.01;
-		return (int)(log(-x)/q)%range;
+		double q = 1;
+		return (int)((-x)/q)%range;
 	}
 
 	void drawExpr()
@@ -355,8 +373,7 @@ int main (int argc, char* argv[])
 	window->debug();
 	window->setChar( 1, 1, '=');
 	window->setScale(0.05);
-	window->setEpsilon(-50.0);
-	printf("\nCOLORTEST=%d\n",(window->calcColor(-100.0)));
+	window->setEpsilon(-90.0);
 	while(1)
 	{
 		window->ctrl();
