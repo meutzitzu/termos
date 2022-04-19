@@ -137,7 +137,7 @@ public:
 			}
 			case '.':
 			{
-				printf( "%s%s%s", g_clr[clr], "\u2585", g_clr[0]);
+				printf( "%s%s%s", g_clr[clr], "\u2584", g_clr[0]);
 				break;
 			}
 			case '\'':
