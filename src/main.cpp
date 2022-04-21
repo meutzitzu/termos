@@ -4,22 +4,26 @@
 #define DEFAULT_ROWS 40
 #define DEFAULT_COLS 80
 
-#define R   "\x1B[31m"
-#define G   "\x1B[32m"
-#define Y   "\x1B[33m"
-#define B   "\x1B[34m"
-#define M   "\x1B[35m"
-#define C   "\x1B[36m"
-#define W   "\x1B[37m"
-#define r 	"\x1B[0m"
+#define R	"\x1B[31m"
+#define G	"\x1B[32m"
+#define Y	"\x1B[33m"
+#define B	"\x1B[34m"
+#define M	"\x1B[35m"
+#define C	"\x1B[36m"
+#define W	"\x1B[37m"
+#define X 	"\x1B[0m"
+//		"\x1b[48;2;155;100;69mTRUECOLOR\x1b[0m\n"
+#define FC_S	"\x1b[38;2;%u;%u;%um\x1b[48;2;%u;%u;%um%s\x1b[0m"
+#define FC_C	"\x1b[38;2;%u;%u;%um\x1b[48;2;%u;%u;%um%c\x1b[0m"
 
-const char* g_clr[] = {r, R, W, Y, G, C, B, M};
+
+const char* g_clr[] = {X, R, W, Y, G, C, B, M};
 
 class TermWindow
 {
 protected:
 	char** m_canvas;
-	int** m_color;
+	unsigned int** m_color;
 	int m_width;
 	int m_height;
 
@@ -37,13 +41,18 @@ public:
 		m_height = height;
 		printf("constructor called with dims %d, %d \n", width, height);
 		m_canvas = new char*[width];
-		m_color = new int*[width];
+		m_color = new unsigned int*[width];
 		for(int k = 0; k < width; ++k)
 		{
 			m_canvas[k] = new char[height];
-			m_color[k] = new int[height];
+			m_color[k] = new unsigned int[height];
 		}
 		wipe();
+	}
+
+	unsigned int rgb( unsigned int r, unsigned int g, unsigned int b)
+	{
+		return (b + 1000*g + 1000000*r);
 	}
 
 	void debug()
@@ -85,9 +94,13 @@ public:
 		m_color[ssx][ssy] = clr;
 	}
 
-	void setColor( int ssx, int ssy, int c)
+	void setColor( int ssx, int ssy, unsigned int c)
 	{
 		m_color[ssx][ssy] = (0<c && c<8 ? c : 0);
+	}
+	void setFullColor( int ssx, int ssy, unsigned int c)
+	{
+		m_color[ssx][ssy] = c;
 	}
 
 	void wipe()
@@ -126,6 +139,33 @@ public:
 		}
 	}
 
+	void printFullClr(char chr, unsigned int fgclr, unsigned int bgclr)
+	{
+		switch(chr)
+		{
+			case ':':
+			{
+				printf( FC_S, fgclr*5/4, fgclr/5, fgclr*2/3, bgclr, bgclr/5, bgclr*3/2, "\u2588" );
+				break;
+			}
+			case '.':
+			{
+				printf( FC_S, fgclr*5/4, fgclr/5, fgclr*2/3, bgclr, bgclr/5, bgclr*3/2, "\u2584" );
+				break;
+			}
+			case '\'':
+			{
+				printf( FC_S, fgclr*5/4, fgclr/5, fgclr*2/3, bgclr, bgclr/5, bgclr*3/2, "\u2580" );
+				break;
+			}
+			default:
+			{
+				printf( FC_C, fgclr*5/4, fgclr/5, fgclr*2/3, fgclr, fgclr/5, fgclr*3/2, chr );
+				break;
+			}
+		}
+	}
+
 	void printClr(char chr, int clr)
 	{
 		switch(chr)
@@ -155,6 +195,15 @@ public:
 		{
 			for ( int ssx=0; ssx < m_width; ++ssx)
 				printClr(m_canvas[ssx][ssy], m_color[ssx][ssy]);
+			printf("\n");
+		}
+	}
+	void renderFullColor()
+	{
+		for( int ssy=0; ssy < m_height; ++ssy)
+		{
+			for ( int ssx=0; ssx < m_width; ++ssx)
+				printFullClr(m_canvas[ssx][ssy], m_color[ssx][ssy], m_color[ssx][ssy]);
 			printf("\n");
 		}
 	}
@@ -226,10 +275,11 @@ public:
 		return -(double)cplxiter(x,y);
 	}
 /// END OF BULLSHIT ^^^ ///
+
 	int calcColor(double x)
 	{
-		const int range = 8;
-		double q = 1;
+		const int range = 256;
+		double q = 0.1;
 		return (int)((-x)/q)%range;
 	}
 
@@ -243,17 +293,19 @@ public:
 			{
 				upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
 				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5));
-				setColor(ssx, ssy, calcColor((upper+lower)/2));	
 				if(upper < m_epsilon && lower < m_epsilon)
 				{
+					setFullColor(ssx, ssy, calcColor(upper));	
 					m_canvas[ssx][ssy] = ':';
 				} 
 				else if (upper < m_epsilon)
 				{
+					setFullColor(ssx, ssy, calcColor(upper));	
 					m_canvas[ssx][ssy] = '\'';
 				}
 				else if (lower < m_epsilon)
 				{
+					setFullColor(ssx, ssy, calcColor(lower));	
 					m_canvas[ssx][ssy] = '.';
 				}
 				
@@ -373,13 +425,13 @@ int main (int argc, char* argv[])
 	window->debug();
 	window->setChar( 1, 1, '=');
 	window->setScale(0.05);
-	window->setEpsilon(-90.0);
+	window->setEpsilon(-00.0);
 	while(1)
 	{
 		window->ctrl();
 		window->drawExpr();
 //		window->drawAxis();
-		window->renderColor();
+		window->renderFullColor();
 	}
 //	printf("%d", window.getWidth());
 
