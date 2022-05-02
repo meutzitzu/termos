@@ -1,29 +1,45 @@
 #include <iostream>
+#include <cstdint>
 #include "math.h"
 
 #define DEFAULT_ROWS 40
 #define DEFAULT_COLS 80
 
-#define R	"\x1B[31m"
-#define G	"\x1B[32m"
-#define Y	"\x1B[33m"
-#define B	"\x1B[34m"
-#define M	"\x1B[35m"
-#define C	"\x1B[36m"
-#define W	"\x1B[37m"
-#define X 	"\x1B[0m"
+#define RED	"\x1B[31m"
+#define GRN	"\x1B[32m"
+#define YLW	"\x1B[33m"
+#define BLU	"\x1B[34m"
+#define MAG	"\x1B[35m"
+#define CYN	"\x1B[36m"
+#define WHT	"\x1B[37m"
+#define RST	"\x1B[0m"
 //		"\x1b[48;2;155;100;69mTRUECOLOR\x1b[0m\n"
 #define FC_S	"\x1b[38;2;%u;%u;%um\x1b[48;2;%u;%u;%um%s\x1b[0m"
+#define FC_FS	"\x1b[38;2;%u;%u;%um%s\x1b[0m"
 #define FC_C	"\x1b[38;2;%u;%u;%um\x1b[48;2;%u;%u;%um%c\x1b[0m"
+#define FC_FC	"\x1b[38;2;%u;%u;%um%c\x1b[0m"
 
+const char* g_clr[] = {RST, RED, WHT, YLW, GRN, CYN, BLU, MAG};
 
-const char* g_clr[] = {X, R, W, Y, G, C, B, M};
+struct color
+{
+	uint8_t R;
+	uint8_t G;
+	uint8_t B;
+};
+
+struct charcolor
+{
+	color fg;
+	color bg;
+	bool A = true;
+};
 
 class TermWindow
 {
 protected:
 	char** m_canvas;
-	unsigned int** m_color;
+	charcolor** m_color;
 	int m_width;
 	int m_height;
 
@@ -41,18 +57,13 @@ public:
 		m_height = height;
 		printf("constructor called with dims %d, %d \n", width, height);
 		m_canvas = new char*[width];
-		m_color = new unsigned int*[width];
+		m_color = new charcolor*[width];
 		for(int k = 0; k < width; ++k)
 		{
 			m_canvas[k] = new char[height];
-			m_color[k] = new unsigned int[height];
+			m_color[k] = new charcolor[height];
 		}
 		wipe();
-	}
-
-	unsigned int rgb( unsigned int r, unsigned int g, unsigned int b)
-	{
-		return (b + 1000*g + 1000000*r);
 	}
 
 	void debug()
@@ -86,19 +97,7 @@ public:
 		m_canvas[ssx][ssy] = c;
 	}
 
-
-	void setCharColor( int ssx, int ssy, char chr, int clr)
-	{
-		//printf("updated char\n");
-		m_canvas[ssx][ssy] = chr;
-		m_color[ssx][ssy] = clr;
-	}
-
-	void setColor( int ssx, int ssy, unsigned int c)
-	{
-		m_color[ssx][ssy] = (0<c && c<8 ? c : 0);
-	}
-	void setFullColor( int ssx, int ssy, unsigned int c)
+	void setFullColor( int ssx, int ssy, charcolor c)
 	{
 		m_color[ssx][ssy] = c;
 	}
@@ -109,7 +108,7 @@ public:
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
 				m_canvas[ssx][ssy] = ' ';
-				m_color[ssx][ssy] = 0;
+				m_color[ssx][ssy] = { 0, 0, 0, 0, 0, 0};
 			}
 	}
 
@@ -139,28 +138,42 @@ public:
 		}
 	}
 
-	void printFullClr(char chr, unsigned int fgclr, unsigned int bgclr)
+	void printFullClr(char chr, charcolor clr)
 	{
+		if (clr.bg.R + clr.bg.G + clr.bg.B < 3*256)
+			clr.A = false;
 		switch(chr)
 		{
 			case ':':
 			{
-				printf( FC_S, fgclr*5/4, fgclr/5, fgclr*2/3, bgclr, bgclr/5, bgclr*3/2, "\u2588" );
+				if (clr.A)
+					printf( FC_S, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, "\u2588" );
+				else 
+					printf( FC_FS, clr.fg.R, clr.fg.G, clr.fg.B,  "\u2588" );
 				break;
 			}
 			case '.':
 			{
-				printf( FC_S, fgclr*5/4, fgclr/5, fgclr*2/3, bgclr, bgclr/5, bgclr*3/2, "\u2584" );
+				if (clr.A)
+					printf( FC_S, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, "\u2584" );
+				else 
+					printf( FC_FS, clr.fg.R, clr.fg.G, clr.fg.B, "\u2584" );
 				break;
 			}
 			case '\'':
 			{
-				printf( FC_S, fgclr*5/4, fgclr/5, fgclr*2/3, bgclr, bgclr/5, bgclr*3/2, "\u2580" );
+				if (clr.A)
+					printf( FC_S, clr.bg.R, clr.bg.G, clr.bg.B, clr.fg.R, clr.fg.G, clr.fg.B, "\u2580" );
+				else 
+					printf( FC_FS, clr.bg.R, clr.bg.G, clr.bg.G, "\u2580" );
 				break;
 			}
 			default:
 			{
-				printf( FC_C, fgclr*5/4, fgclr/5, fgclr*2/3, fgclr, fgclr/5, fgclr*3/2, chr );
+				if (clr.A)
+					printf( FC_C, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, chr );
+				else 
+					printf( FC_FC, clr.fg.R, clr.fg.G, clr.fg.B, chr );
 				break;
 			}
 		}
@@ -189,6 +202,7 @@ public:
 		}
 	}
 
+	/*
 	void renderColor()
 	{
 		for( int ssy=0; ssy < m_height; ++ssy)
@@ -198,12 +212,25 @@ public:
 			printf("\n");
 		}
 	}
+	*/
+
+	color rgb(uint8_t r, uint8_t g, uint8_t b)
+	{
+		return color{ r, g, b};
+	}
+
+	
+	charcolor crgb(color fg, color bg)
+	{
+		return (charcolor){fg, bg};
+	}
+
 	void renderFullColor()
 	{
 		for( int ssy=0; ssy < m_height; ++ssy)
 		{
 			for ( int ssx=0; ssx < m_width; ++ssx)
-				printFullClr(m_canvas[ssx][ssy], m_color[ssx][ssy], m_color[ssx][ssy]);
+				printFullClr(m_canvas[ssx][ssy], m_color[ssx][ssy]);
 			printf("\n");
 		}
 	}
@@ -270,17 +297,17 @@ public:
 /// THIS IS SUM BULLSHIT (because I'm too lazy to write an expression parser) /// 
 	double expr(double x, double y)
 	{
-		//return (abs(100*sin(x)-y)-10)*(abs(x*x + y*y -512)-16);
-		//return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
-		return -(double)cplxiter(x,y);
+	//	return (abs(100*sin(x)-y)-10)*(abs(x*x + y*y -512)-16);
+		return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
+	//	return -(double)cplxiter(x,y);
 	}
 /// END OF BULLSHIT ^^^ ///
 
-	int calcColor(double x)
+	color calcColor(double x)
 	{
 		const int range = 256;
-		double q = 0.1;
-		return (int)((-x)/q)%range;
+		double q = 1.1;
+		return (color){(int)((-x)/q)%range, (int)((-x)/q)%range, (int)((-x)/q)%range};
 	}
 
 	void drawExpr()
@@ -292,20 +319,22 @@ public:
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
 				upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
+			//	upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
+			//	sc(ss -o) => sc*ss - 
 				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5));
-				if(upper < m_epsilon && lower < m_epsilon)
+				if( upper < m_epsilon && lower < m_epsilon)
 				{
-					setFullColor(ssx, ssy, calcColor(upper));	
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper)));	
 					m_canvas[ssx][ssy] = ':';
 				} 
 				else if (upper < m_epsilon)
 				{
-					setFullColor(ssx, ssy, calcColor(upper));	
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper)));	
 					m_canvas[ssx][ssy] = '\'';
 				}
 				else if (lower < m_epsilon)
 				{
-					setFullColor(ssx, ssy, calcColor(lower));	
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper)));	
 					m_canvas[ssx][ssy] = '.';
 				}
 				
@@ -425,7 +454,7 @@ int main (int argc, char* argv[])
 	window->debug();
 	window->setChar( 1, 1, '=');
 	window->setScale(0.05);
-	window->setEpsilon(-00.0);
+	window->setEpsilon(-8.0);
 	while(1)
 	{
 		window->ctrl();

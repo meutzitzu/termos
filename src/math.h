@@ -4,13 +4,13 @@ double g_x = 0;
 double g_y = 0;
 
 
-int cplxiter( double ix, double iy)
+int cplxiter( double x, double y)
 {
 	int maxiters = 1000;
 	int i = 0;
-	double threshold = 4.0;
-	double x = g_x;
-	double y = g_y;
+	double threshold = 8.0;
+	double ix = g_x;
+	double iy = g_y;
 	double it;
 	while( ix*ix + iy*iy < threshold*threshold && ++i<maxiters)
 	{
