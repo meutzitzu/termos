@@ -140,8 +140,8 @@ public:
 
 	void printFullClr(char chr, charcolor clr)
 	{
-		if (clr.bg.R + clr.bg.G + clr.bg.B < 3*256)
-			clr.A = false;
+	//	if (clr.bg.R + clr.bg.G + clr.bg.B < 2)
+	//		clr.A = false;
 		switch(chr)
 		{
 			case ':':
@@ -220,9 +220,9 @@ public:
 	}
 
 	
-	charcolor crgb(color fg, color bg)
+	charcolor crgb(color fg, color bg, bool a)
 	{
-		return (charcolor){fg, bg};
+		return (charcolor){fg, bg, a};
 	}
 
 	void renderFullColor()
@@ -298,8 +298,8 @@ public:
 	double expr(double x, double y)
 	{
 	//	return (abs(100*sin(x)-y)-10)*(abs(x*x + y*y -512)-16);
-		return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
-	//	return -(double)cplxiter(x,y);
+	//	return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
+		return -(double)cplxiter(x,y);
 	}
 /// END OF BULLSHIT ^^^ ///
 
@@ -322,19 +322,20 @@ public:
 			//	upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
 			//	sc(ss -o) => sc*ss - 
 				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5));
-				if( upper < m_epsilon && lower < m_epsilon)
+				if(upper < m_epsilon && lower < m_epsilon)
 				{
-					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper)));	
-					m_canvas[ssx][ssy] = ':';
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), true));	
+					m_canvas[ssx][ssy] = '.';
 				} 
 				else if (upper < m_epsilon)
 				{
-					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper)));	
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), false));	
 					m_canvas[ssx][ssy] = '\'';
+
 				}
 				else if (lower < m_epsilon)
 				{
-					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper)));	
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), false));	
 					m_canvas[ssx][ssy] = '.';
 				}
 				
