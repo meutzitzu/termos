@@ -300,14 +300,15 @@ public:
 	//	return (abs(100*sin(x)-y)-10)*(abs(x*x + y*y -512)-16);
 	//	return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
 		return -(double)cplxiter(x,y);
+	//	return abs((3*x + 2)-y)-0.1;
 	}
 /// END OF BULLSHIT ^^^ ///
 
 	color calcColor(double x)
 	{
 		const int range = 256;
-		double q = 1.1;
-		return (color){(int)((-x)/q)%range, (int)((-x)/q)%range, (int)((-x)/q)%range};
+		double q = 0.5;
+		return (color){(int)((-x)/q)%range, (int)(0.5*(-x)/q)%range, (int)(0.5*(-x)/q)%range};
 	}
 
 	void drawExpr()
@@ -455,12 +456,12 @@ int main (int argc, char* argv[])
 	window->debug();
 	window->setChar( 1, 1, '=');
 	window->setScale(0.05);
-	window->setEpsilon(-8.0);
+	window->setEpsilon(-8.1);
 	while(1)
 	{
 		window->ctrl();
 		window->drawExpr();
-//		window->drawAxis();
+	//	window->drawAxis();
 		window->renderFullColor();
 	}
 //	printf("%d", window.getWidth());
