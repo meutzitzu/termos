@@ -5,6 +5,11 @@
 #define DEFAULT_ROWS 40
 #define DEFAULT_COLS 80
 
+#define U_FULL_BLOCK "\u2588"
+//#define U_LOWH_BLOCK "\u2584"
+#define U_LOWH_BLOCK "\u2584"
+#define U_UPPH_BLOCK "\u2580"
+
 #define RED	"\x1B[31m"
 #define GRN	"\x1B[32m"
 #define YLW	"\x1B[33m"
@@ -142,30 +147,31 @@ public:
 	{
 	//	if (clr.bg.R + clr.bg.G + clr.bg.B < 2)
 	//		clr.A = false;
+	//		clr.A = false;
 		switch(chr)
 		{
 			case ':':
 			{
 				if (clr.A)
-					printf( FC_S, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, "\u2588" );
+					printf( FC_S, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, U_FULL_BLOCK );
 				else 
-					printf( FC_FS, clr.fg.R, clr.fg.G, clr.fg.B,  "\u2588" );
+					printf( FC_FS, clr.fg.R, clr.fg.G, clr.fg.B,  U_FULL_BLOCK );
 				break;
 			}
 			case '.':
 			{
 				if (clr.A)
-					printf( FC_S, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, "\u2584" );
+					printf( FC_S, clr.fg.R, clr.fg.G, clr.fg.B, clr.bg.R, clr.bg.G, clr.bg.B, U_LOWH_BLOCK );
 				else 
-					printf( FC_FS, clr.fg.R, clr.fg.G, clr.fg.B, "\u2584" );
+					printf( FC_FS, clr.fg.R, clr.fg.G, clr.fg.B, U_LOWH_BLOCK );
 				break;
 			}
 			case '\'':
 			{
 				if (clr.A)
-					printf( FC_S, clr.bg.R, clr.bg.G, clr.bg.B, clr.fg.R, clr.fg.G, clr.fg.B, "\u2580" );
+					printf( FC_S, clr.bg.R, clr.bg.G, clr.bg.B, clr.fg.R, clr.fg.G, clr.fg.B, U_UPPH_BLOCK );
 				else 
-					printf( FC_FS, clr.bg.R, clr.bg.G, clr.bg.G, "\u2580" );
+					printf( FC_FS, clr.bg.R, clr.bg.G, clr.bg.G, U_UPPH_BLOCK );
 				break;
 			}
 			default:
@@ -319,10 +325,10 @@ public:
 		for( int ssy=0; ssy < m_height; ++ssy)
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
+			//	upper = expr((m_scale*ssx-m_offset.x)/m_stretch,m_scale*ssy-m_offset.y);
 				upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
-			//	upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
 			//	sc(ss -o) => sc*ss - 
-				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y+0.5));
+				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y + 1/m_stretch));
 				if(upper < m_epsilon && lower < m_epsilon)
 				{
 					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), true));	
@@ -339,7 +345,8 @@ public:
 					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), false));	
 					m_canvas[ssx][ssy] = '.';
 				}
-				
+				else 
+					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), false));
 			}
 	}
 
@@ -449,14 +456,13 @@ int main (int argc, char* argv[])
 	Graph* window = NULL;
 
 	if(argc==3)
-		window = new Graph(parseInt(argv[1]),parseInt(argv[2]));
+		window = new Graph(parseInt(argv[1]),parseInt(argv[2])-1);
 	else 
 		window = new Graph();
 
 	window->debug();
-	window->setChar( 1, 1, '=');
 	window->setScale(0.05);
-	window->setEpsilon(-8.1);
+	window->setEpsilon(-8.0);
 	while(1)
 	{
 		window->ctrl();
@@ -464,7 +470,6 @@ int main (int argc, char* argv[])
 	//	window->drawAxis();
 		window->renderFullColor();
 	}
-//	printf("%d", window.getWidth());
 
 	return 0;
 }
