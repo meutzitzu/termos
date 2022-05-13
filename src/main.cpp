@@ -4,7 +4,7 @@
 
 #define DEFAULT_ROWS 40
 #define DEFAULT_COLS 80
-
+#define PI 3.14159265
 #define U_FULL_BLOCK "\u2588"
 //#define U_LOWH_BLOCK "\u2584"
 #define U_LOWH_BLOCK "\u2584"
@@ -115,6 +115,38 @@ public:
 				m_canvas[ssx][ssy] = ' ';
 				m_color[ssx][ssy] = { 0, 0, 0, 0, 0, 0};
 			}
+	}
+
+	color hsv( double h, double s, double v)
+	{
+	double C = s*v;
+	double H = h/PI*180;
+	double X = C*(1-abs(fmod(H/60.0, 2)-1));
+	double m = v-C;
+	double r,g,b;
+	if(H >= 0 && H < 60){
+	    r = C,g = X,b = 0;
+	}
+	else if(H >= 60 && H < 120){
+	    r = X,g = C,b = 0;
+	}
+	else if(H >= 120 && H < 180){
+	    r = 0,g = C,b = X;
+	}
+	else if(H >= 180 && H < 240){
+	    r = 0,g = X,b = C;
+	}
+	else if(H >= 240 && H < 300){
+	    r = X,g = 0,b = C;
+	}
+	else{
+	    r = C,g = 0,b = X;
+	}
+	uint8_t R = (r+m)*255;
+	uint8_t G = (g+m)*255;
+	uint8_t B = (b+m)*255;
+
+	return (color){R, G, B};
 	}
 
 	char rawin()
@@ -315,8 +347,9 @@ public:
 	color calcColor(double x)
 	{
 		const int range = 256;
-		double q = 0.8;
-		return (color){(int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range};
+		double q = 100.0;
+	//	return (color){(int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range};
+		return hsv(PI+x/q, 0.2, -x/6);
 	}
 
 	void drawExpr()
