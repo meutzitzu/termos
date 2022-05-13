@@ -108,7 +108,7 @@ public:
 	}
 
 	void wipe()
-	{
+{
 		for( int ssy=0; ssy < m_height; ++ssy)
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
@@ -119,9 +119,11 @@ public:
 
 	color hsv( double h, double s, double v)
 	{
+//	s -= floor(s);
+//	v -= floor(v);
 	double C = s*v;
-	double H = h/PI*180;
-	double X = C*(1-abs(fmod(H/60.0, 2)-1));
+	double H = fmod(h/PI*180,360);
+	double X = C*(1-fabs(fmod(H/60.0, 2)-1));
 	double m = v-C;
 	double r,g,b;
 	if(H >= 0 && H < 60){
@@ -155,7 +157,7 @@ public:
         	char c = getchar(); 
         	// terminate when "." is pressed
         	system("stty cooked");
-        	system("clear");
+        	//system("clear");
         	//std::cout << c << " was pressed."<< std::endl;
         	if(c == 'q')
 		{
@@ -349,7 +351,7 @@ public:
 		const int range = 256;
 		double q = 100.0;
 	//	return (color){(int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range};
-		return hsv(PI+x/q, 0.2, -x/6);
+		return hsv(-x, 0.1,-x);
 	}
 
 	void drawExpr()
@@ -396,7 +398,7 @@ public:
 			m_canvas[(int)m_offset.x][ssy] = '|';
 		}
 	}
-
+	
 	void drawCenter()
 	{
 		m_canvas[m_width/2][m_height/2] = '+';
@@ -405,7 +407,10 @@ public:
 		m_color[m_width/2][m_height/2].fg.B = 255;
 //		setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), true));	
 	}
-
+	void sampleCenter()
+	{
+		printf("+ = %.2f", expr((-m_offset.x)/m_stretch,-m_offset.y));
+	}
 	void ctrl()
 	{
 		char c = rawin();
@@ -487,6 +492,18 @@ public:
 				g_x += m_scale*m_pdelta*m_delta;
 				break;
 			}
+			case 'n':
+			{
+				//g_maxiters /= 2;
+				m_epsilon /= 2;
+				break;
+			}
+			case 'm':
+			{
+				//g_maxiters *= 2;
+				m_epsilon *= 2;
+				break;
+			}
 		}
 		wipe();
 	}
@@ -504,7 +521,7 @@ int main (int argc, char* argv[])
 	Graph* window = NULL;
 
 	if(argc==3)
-		window = new Graph(parseInt(argv[1]),parseInt(argv[2])-1);
+		window = new Graph(parseInt(argv[1]),parseInt(argv[2])-0);
 	else 
 		window = new Graph();
 
@@ -518,6 +535,7 @@ int main (int argc, char* argv[])
 	//	window->drawAxis();
 		window->drawCenter();
 		window->renderFullColor();
+		window->sampleCenter();
 	}
 
 	return 0;

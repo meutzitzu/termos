@@ -2,7 +2,7 @@
 
 double g_x = 0;
 double g_y = 0;
-double g_maxiters = 1024;
+double g_maxiters = 512;
 
 
 int cplxiter( double x, double y)
