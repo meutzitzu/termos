@@ -2,11 +2,12 @@
 
 double g_x = 0;
 double g_y = 0;
+double g_maxiters = 1024;
 
 
 int cplxiter( double x, double y)
 {
-	int maxiters = 1000;
+	int maxiters = g_maxiters;
 	int i = 0;
 	double threshold = 8.0;
 	double ix = g_x;
@@ -37,6 +38,7 @@ public:
 		x = X;
 		y = Y;
 	}
+
 
 	double length()
 	{

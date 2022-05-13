@@ -251,15 +251,17 @@ private:
 	double m_epsilon;
 	double m_delta;
 	double m_kappa;
-	
+	double m_pdelta;
+
 	void initValues()
 	{
-		m_offset.x = (double)m_width/2;
-		m_offset.y = (double)m_height/2;
+		m_offset.x = 0.0;
+		m_offset.y = 0.0;
 		m_stretch = 2.0;
 		m_epsilon = 0.5;
 		m_delta = 10.0;
 		m_kappa = 1.1;
+		m_pdelta = 0.005;
 	}
 public:
 	
@@ -313,8 +315,8 @@ public:
 	color calcColor(double x)
 	{
 		const int range = 256;
-		double q = 0.5;
-		return (color){(int)((-x)/q)%range, (int)(0.5*(-x)/q)%range, (int)(0.5*(-x)/q)%range};
+		double q = 0.8;
+		return (color){(int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range};
 	}
 
 	void drawExpr()
@@ -325,10 +327,10 @@ public:
 		for( int ssy=0; ssy < m_height; ++ssy)
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
-			//	upper = expr((m_scale*ssx-m_offset.x)/m_stretch,m_scale*ssy-m_offset.y);
-				upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
+			//	upper = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y));
 			//	sc(ss -o) => sc*ss - 
-				lower = expr(m_scale*(ssx-m_offset.x)/m_stretch,m_scale*(ssy-m_offset.y + 1/m_stretch));
+				upper = expr((m_scale*(ssx-m_width/2)-m_offset.x)/m_stretch,m_scale*(ssy-m_height/2)-m_offset.y);
+				lower = expr((m_scale*(ssx-m_width/2)-m_offset.x)/m_stretch,m_scale*(ssy-m_height/2+0.5)-m_offset.y);
 				if(upper < m_epsilon && lower < m_epsilon)
 				{
 					setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), true));	
@@ -353,9 +355,22 @@ public:
 	void drawAxis()
 	{
 		for( int ssx=0; ssx < m_width; ++ssx)
+		{
 			m_canvas[ssx][(int)m_offset.y] = '-';
+		}
 		for( int ssy=0; ssy < m_height; ++ssy)
+		{
 			m_canvas[(int)m_offset.x][ssy] = '|';
+		}
+	}
+
+	void drawCenter()
+	{
+		m_canvas[m_width/2][m_height/2] = '+';
+		m_color[m_width/2][m_height/2].fg.R = 255;
+		m_color[m_width/2][m_height/2].fg.G = 255;
+		m_color[m_width/2][m_height/2].fg.B = 255;
+//		setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), true));	
 	}
 
 	void ctrl()
@@ -366,42 +381,42 @@ public:
 		{
 			case 'h':
 			{
-				translate(2*m_delta, 0);
+				translate(2*m_scale*m_delta, 0);
 				break;
 			}
 			case 'j':
 			{
-				translate(0, -m_delta);
+				translate(0, -m_scale*m_delta);
 				break;
 			}
 			case 'k':
 			{
-				translate(0, m_delta);
+				translate(0, m_scale*m_delta);
 				break;
 			}
 			case 'l':
 			{
-				translate(-2*m_delta, 0);
+				translate(-2*m_scale*m_delta, 0);
 				break;
 			}
 			case 'H':
 			{
-				translate(2.0, 0);
+				translate(m_scale*2.0, 0);
 				break;
 			}
 			case 'J':
 			{
-				translate(0, -1.0);
+				translate(0, -m_scale*1.0);
 				break;
 			}
 			case 'K':
 			{
-				translate(0, 1.0);
+				translate(0, m_scale*1.0);
 				break;
 			}
 			case 'L':
 			{
-				translate(-2.0, 0);
+				translate(-m_scale*2.0, 0);
 				break;
 			}
 			case '-':
@@ -421,22 +436,22 @@ public:
 			}
 			case 'a':
 			{
-				g_x -= 0.005*m_delta;
+				g_x -= m_scale*m_pdelta*m_delta;
 				break;
 			}
 			case 's':
 			{
-				g_y += 0.005*m_delta;
+				g_y += m_scale*m_pdelta*m_delta;
 				break;
 			}
 			case 'd':
 			{
-				g_y -= 0.005*m_delta;
+				g_y -= m_scale*m_pdelta*m_delta;
 				break;
 			}
 			case 'f':
 			{
-				g_x += 0.005*m_delta;
+				g_x += m_scale*m_pdelta*m_delta;
 				break;
 			}
 		}
@@ -468,6 +483,7 @@ int main (int argc, char* argv[])
 		window->ctrl();
 		window->drawExpr();
 	//	window->drawAxis();
+		window->drawCenter();
 		window->renderFullColor();
 	}
 
