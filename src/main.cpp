@@ -75,6 +75,8 @@ public:
 	{
 		char* s;
 		printf("\n\nTermWindow instance\nm_width: %d\nm_height:%d\n\n", m_width, m_height);
+        //	system("stty raw");
+
 	}
 
 	~TermWindow()
@@ -107,8 +109,16 @@ public:
 		m_color[ssx][ssy] = c;
 	}
 
+	void moveCursor(int row, int column)
+	{
+		printf("\033[%d;%dH", row, column);
+	}
+	void gotoxy(int x,int y)
+	{
+	    printf("%c[%d;%df",0x1B,y,x);
+	}
 	void wipe()
-{
+	{
 		for( int ssy=0; ssy < m_height; ++ssy)
 			for ( int ssx=0; ssx < m_width; ++ssx)
 			{
@@ -119,56 +129,56 @@ public:
 
 	color hsv( double h, double s, double v)
 	{
-//	s -= floor(s);
-//	v -= floor(v);
-	double C = s*v;
-	double H = fmod(h/PI*180,360);
-	double X = C*(1-fabs(fmod(H/60.0, 2)-1));
-	double m = v-C;
-	double r,g,b;
-	if(H >= 0 && H < 60){
-	    r = C,g = X,b = 0;
-	}
-	else if(H >= 60 && H < 120){
-	    r = X,g = C,b = 0;
-	}
-	else if(H >= 120 && H < 180){
-	    r = 0,g = C,b = X;
-	}
-	else if(H >= 180 && H < 240){
-	    r = 0,g = X,b = C;
-	}
-	else if(H >= 240 && H < 300){
-	    r = X,g = 0,b = C;
-	}
-	else{
-	    r = C,g = 0,b = X;
-	}
-	uint8_t R = (r+m)*255;
-	uint8_t G = (g+m)*255;
-	uint8_t B = (b+m)*255;
-
-	return (color){R, G, B};
+	//	s -= floor(s);
+	//	v -= floor(v);
+		double C = s*v;
+		double H = fmod(h/PI*180,360);
+		double X = C*(1-fabs(fmod(H/60.0, 2)-1));
+		double m = v-C;
+		double r,g,b;
+		if(H >= 0 && H < 60){
+		    r = C,g = X,b = 0;
+		}
+		else if(H >= 60 && H < 120){
+		    r = X,g = C,b = 0;
+		}
+		else if(H >= 120 && H < 180){
+		    r = 0,g = C,b = X;
+		}
+		else if(H >= 180 && H < 240){
+		    r = 0,g = X,b = C;
+		}
+		else if(H >= 240 && H < 300){
+		    r = X,g = 0,b = C;
+		}
+		else{
+		    r = C,g = 0,b = X;
+		}
+		uint8_t R = (r+m)*255;
+		uint8_t G = (g+m)*255;
+		uint8_t B = (b+m)*255;
+	
+		return (color){R, G, B};
 	}
 
 	char rawin()
 	{
         	system("stty raw");
         	char c = getchar(); 
-        	// terminate when "." is pressed
         	system("stty cooked");
-        	//system("clear");
-        	//std::cout << c << " was pressed."<< std::endl;
+        //	system("clear");
+        //	std::cout << c << " was pressed."<< std::endl;
         	if(c == 'q')
 		{
-        	    system("stty cooked");
-        	    exit(0);
+			printf("\n");
+			exit(0);
         	}  
 		return c;
 	}
 
 	void render()
 	{
+		gotoxy(0,0);
 		for( int ssy=0; ssy < m_height; ++ssy)
 		{
 			for ( int ssx=0; ssx < m_width; ++ssx)
@@ -267,11 +277,26 @@ public:
 
 	void renderFullColor()
 	{
+		moveCursor(10,10);
 		for( int ssy=0; ssy < m_height; ++ssy)
 		{
 			for ( int ssx=0; ssx < m_width; ++ssx)
 				printFullClr(m_canvas[ssx][ssy], m_color[ssx][ssy]);
 			printf("\n");
+		}
+	}
+
+	void smartrenderFullColor()
+	{
+	moveCursor(0,0);
+		for( int ssy=0; ssy < m_height; ++ssy)
+		{
+		moveCursor(ssy, 0);
+			for ( int ssx=0; ssx < m_width; ++ssx)
+			{
+			//	moveCursor(ssy, ssx);
+				printFullClr(m_canvas[ssx][ssy], m_color[ssx][ssy]);
+			}
 		}
 	}
 };
@@ -342,6 +367,8 @@ public:
 	//	return (abs(100*sin(x)-y)-10)*(abs(x*x + y*y -512)-16);
 	//	return sqrt(pow(((10*sin(x/6)-y))*(x*x + y*y -512), 2)+64)-512;
 		return -(double)cplxiter(x,y);
+	//	return -2*PI+atan2(x,y);
+	//	return -sqrt(x*x+y*y);
 	//	return abs((3*x + 2)-y)-0.1;
 	}
 /// END OF BULLSHIT ^^^ ///
@@ -351,7 +378,7 @@ public:
 		const int range = 256;
 		double q = 100.0;
 	//	return (color){(int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range, (int)(0.9*(-x)/q)%range};
-		return hsv(-x, 0.1,-x);
+		return hsv(-x , 0.1, -x);
 	}
 
 	void drawExpr()
@@ -401,14 +428,16 @@ public:
 	
 	void drawCenter()
 	{
-		m_canvas[m_width/2][m_height/2] = '+';
-		m_color[m_width/2][m_height/2].fg.R = 255;
-		m_color[m_width/2][m_height/2].fg.G = 255;
-		m_color[m_width/2][m_height/2].fg.B = 255;
+		m_canvas[m_width/2][m_height/2] = '^';
+		uint8_t brightness = (m_color[m_width/2][m_height/2].fg.R + m_color[m_width/2][m_height/2].fg.R + m_color[m_width/2][m_height/2].fg.R < 500 ? 255 : 0);
+		m_color[m_width/2][m_height/2].fg.R = brightness;
+		m_color[m_width/2][m_height/2].fg.G = brightness;
+		m_color[m_width/2][m_height/2].fg.B = brightness;
 //		setFullColor(ssx, ssy, crgb( calcColor(lower), calcColor(upper), true));	
 	}
 	void sampleCenter()
 	{
+		moveCursor(m_height, 0);
 		printf("+ = %.2f", expr((-m_offset.x)/m_stretch,-m_offset.y));
 	}
 	void ctrl()
@@ -419,7 +448,7 @@ public:
 		{
 			case 'h':
 			{
-				translate(2*m_scale*m_delta, 0);
+				translate(m_stretch*m_scale*m_delta, 0);
 				break;
 			}
 			case 'j':
@@ -434,27 +463,27 @@ public:
 			}
 			case 'l':
 			{
-				translate(-2*m_scale*m_delta, 0);
+				translate(-m_stretch*m_scale*m_delta, 0);
 				break;
 			}
 			case 'H':
 			{
-				translate(m_scale*2.0, 0);
+				translate(m_scale, 0);
 				break;
 			}
 			case 'J':
 			{
-				translate(0, -m_scale*1.0);
+				translate(0, -m_scale*1.0/m_stretch);
 				break;
 			}
 			case 'K':
 			{
-				translate(0, m_scale*1.0);
+				translate(0, m_scale*1.0/m_stretch);
 				break;
 			}
 			case 'L':
 			{
-				translate(-m_scale*2.0, 0);
+				translate(-m_scale, 0);
 				break;
 			}
 			case '-':
@@ -534,8 +563,8 @@ int main (int argc, char* argv[])
 		window->drawExpr();
 	//	window->drawAxis();
 		window->drawCenter();
-		window->renderFullColor();
-		window->sampleCenter();
+		window->smartrenderFullColor();
+	//	window->sampleCenter();
 	}
 
 	return 0;
