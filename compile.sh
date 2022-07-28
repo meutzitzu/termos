@@ -1,2 +1,2 @@
 #!/bin/bash
-g++ src/main.cpp -o bin/termos
+mkdir -p bin && g++ src/main.cpp -o bin/termos

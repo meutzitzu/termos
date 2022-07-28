@@ -1,3 +1,4 @@
 # Termos gitignore file
 
-bin/
+bin/*
+
